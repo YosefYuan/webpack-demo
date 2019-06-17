@@ -23,7 +23,7 @@ const moduleAnalyser = (filename) => {
     } = babel.transformFromAst(ast, null, {
         presets: ['@babel/preset-env']
     })
-    console.log(code);
+    // console.log(code);
     return {
         filename,
         dependencies,
@@ -53,5 +53,25 @@ const makeDependenciesGraph = (entry) => {
     return graph;
 }
 
-const graphInfo = makeDependenciesGraph('./src/index.js');
-console.log(graphInfo);
+const genergateCode = (entry) => {
+    console.log(makeDependenciesGraph(entry));
+    const graph = JSON.stringify(makeDependenciesGraph(entry));
+    return `
+        (function(graph){
+            function require(module){
+                function localRequire(relativePath){
+                    return require(graph[module].dependencies[relativePath])
+                }
+                var exports = {};
+                (function(require,exports, code) {
+                    eval(code)
+                })(localRequire, exports, graph[module].code)
+                return exports;
+            };
+            require('${entry}')
+        })(${graph})
+    `;
+}
+
+const code  = genergateCode('./src/index.js');
+console.log(code); 
